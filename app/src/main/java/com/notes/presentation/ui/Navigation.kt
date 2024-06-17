@@ -1,4 +1,4 @@
-package com.notes.presentation
+package com.notes.presentation.ui
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
