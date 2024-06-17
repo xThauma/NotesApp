@@ -1,6 +1,7 @@
-package com.notes.data
+package com.notes.data.repository
 
-import com.notes.domain.NoteRepository
+import com.notes.data.database.NoteDao
+import com.notes.domain.repository.NoteRepository
 import com.notes.domain.model.Note
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject

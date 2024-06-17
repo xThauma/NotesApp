@@ -1,4 +1,4 @@
-package com.notes.data
+package com.notes.data.database
 
 
 import androidx.room.Dao

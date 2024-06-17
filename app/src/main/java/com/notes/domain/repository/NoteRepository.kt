@@ -1,4 +1,4 @@
-package com.notes.domain
+package com.notes.domain.repository
 
 import com.notes.domain.model.Note
 import kotlinx.coroutines.flow.Flow

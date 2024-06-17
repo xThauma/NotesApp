@@ -4,11 +4,11 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.notes.data.event.NoteUiEvent
-import com.notes.domain.FilterAndSortNotesUseCase
-import com.notes.domain.NoteRepository
+import com.notes.domain.usecase.FilterAndSortNotesUseCase
+import com.notes.domain.repository.NoteRepository
 import com.notes.domain.model.Note
 import com.notes.domain.model.SortOrder
-import com.notes.presentation.NoteState
+import com.notes.presentation.ui.NoteState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow

@@ -1,4 +1,4 @@
-package com.notes.presentation
+package com.notes.presentation.ui
 
 import com.notes.domain.model.Note
 

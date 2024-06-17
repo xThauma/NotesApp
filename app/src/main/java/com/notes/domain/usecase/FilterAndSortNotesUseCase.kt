@@ -1,4 +1,4 @@
-package com.notes.domain
+package com.notes.domain.usecase
 
 import com.notes.domain.model.Note
 import com.notes.domain.model.SortOrder
