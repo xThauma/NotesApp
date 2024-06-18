@@ -7,13 +7,11 @@ import java.time.format.DateTimeFormatter
 
 @Entity
 data class Note(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val title: String,
-    val content: String,
-    val creationDate: LocalDate = LocalDate.now(),
-    val notifyDate: LocalDate? = null,
-    val shouldNotify: Boolean = false,
-    val selectedColorIndex: Int = 0
+        @PrimaryKey(autoGenerate = true) val id: Int = 0,
+        val title: String,
+        val content: String,
+        val creationDate: LocalDate = LocalDate.now(),
+        val selectedColorIndex: Int = 0
 ) {
 
     init {
@@ -23,9 +21,6 @@ data class Note(
 
     val formattedCreationDate: String
         get() = creationDate.format(DateTimeFormatter.ofPattern(DATE_FORMAT))
-
-    val formattedNotifyDate: String?
-        get() = notifyDate?.format(DateTimeFormatter.ofPattern(DATE_FORMAT))
 
     companion object {
 

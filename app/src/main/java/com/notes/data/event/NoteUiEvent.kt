@@ -7,7 +7,6 @@ sealed interface NoteUiEvent {
     data class Delete(val note: Note) : NoteUiEvent
     data class Insert(val note: Note) : NoteUiEvent
     data class Update(val note: Note) : NoteUiEvent
-    data class UpdateNotification(val note: Note) : NoteUiEvent
     data class GetById(val noteId: Int?) : NoteUiEvent
     sealed interface SortEvent : NoteUiEvent {
         data object Ascending : SortEvent
