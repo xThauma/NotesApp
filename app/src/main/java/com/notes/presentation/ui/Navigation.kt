@@ -11,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.notes.presentation.navigation.Routes
 import com.notes.presentation.viewmodel.NoteViewModel
 
 @Composable
@@ -24,12 +25,9 @@ fun NoteAppNavigation(
             val currentBackStackEntry = navController.currentBackStackEntryAsState().value
             val currentDestination = currentBackStackEntry?.destination
             val title = when (currentDestination?.route) {
-                "notes" -> "Notes"
-                "updateNote/{noteId}" -> {
-                    val noteId = currentBackStackEntry.arguments?.getString("noteId")
-                    if (noteId == "null") "Add Note" else "Edit Note"
-                }
-
+                Routes.NOTES -> "Notes"
+                Routes.UPDATE_NOTE -> "Edit Note"
+                Routes.ADD_NOTE -> "Add Note"
                 else -> "Notes App"
             }
             AppTopBar(
@@ -37,17 +35,17 @@ fun NoteAppNavigation(
                 navController = navController,
                 onEvent = { event -> noteViewModel.onEvent(event) },
                 navigateToAddNote = {
-                    navController.navigate("updateNote/null")
+                    navController.navigate("addNote/null")
                 },
             )
         }
     ) { paddingValues ->
         NavHost(
             navController = navController,
-            startDestination = "notes",
+            startDestination = Routes.NOTES,
             modifier = Modifier.padding(paddingValues)
         ) {
-            composable("notes") {
+            composable(Routes.NOTES) {
                 NotesScreen(
                     navigateToEditNote = { noteId ->
                         navController.navigate("updateNote/$noteId")
@@ -56,12 +54,17 @@ fun NoteAppNavigation(
                 )
             }
             composable(
-                route = "updateNote/{noteId}",
+                route = Routes.UPDATE_NOTE,
                 arguments = listOf(navArgument("noteId") { type = NavType.StringType })
             ) { backStackEntry ->
                 val noteId = backStackEntry.arguments?.getString("noteId")
                 val noteIdInt = noteId?.toIntOrNull()
                 UpdateNote(navController = navController, noteId = noteIdInt)
+            }
+            composable(
+                route = Routes.ADD_NOTE
+            ) { _ ->
+                UpdateNote(navController = navController, noteId = null)
             }
         }
     }

@@ -13,10 +13,12 @@ import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
@@ -37,7 +39,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.notes.data.event.NoteUiEvent
+import com.notes.presentation.navigation.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +51,8 @@ fun AppTopBar(
     onEvent: (NoteUiEvent) -> Unit,
     navigateToAddNote: () -> Unit,
 ) {
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
     var searchVisible by rememberSaveable { mutableStateOf(false) }
     var searchText by rememberSaveable { mutableStateOf("") }
 
@@ -71,24 +77,53 @@ fun AppTopBar(
             }
         },
         actions = {
-            if (navController.previousBackStackEntry == null) {
-                if (searchVisible) {
-                    NoteSearchBar(
-                        searchText = searchText,
-                        onSearchTextChanged = {
-                            searchText = it
-                            onEvent(NoteUiEvent.FilterEvent.TextChange(it))
-                        },
-                        onSearchClose = {
-                            searchVisible = false
-                            searchText = ""
-                            onEvent(NoteUiEvent.FilterEvent.TextChange(searchText))
-                        }
-                    )
-                } else {
-                    NoteSearchIcon(onSearchClick = { searchVisible = true })
-                    NoteAddIcon { navigateToAddNote.invoke() }
-                    NoteSortIcon { onEvent(it) }
+            when (currentRoute) {
+                Routes.NOTES -> {
+                    if (searchVisible) {
+                        NoteSearchBar(
+                            searchText = searchText,
+                            onSearchTextChanged = {
+                                searchText = it
+                                onEvent(NoteUiEvent.FilterEvent.TextChange(it))
+                            },
+                            onSearchClose = {
+                                searchVisible = false
+                                searchText = ""
+                                onEvent(NoteUiEvent.FilterEvent.TextChange(searchText))
+                            }
+                        )
+                    } else {
+                        NoteSearchIcon(onSearchClick = { searchVisible = true })
+                        NoteAddIcon { navigateToAddNote.invoke() }
+                        NoteSortIcon { onEvent(it) }
+                    }
+                }
+
+                Routes.ADD_NOTE -> {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Add",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add Icon",
+                            modifier = Modifier
+                                .padding(end = 24.dp)
+                                .clickable {
+                                }
+                        )
+                    }
+                }
+
+                Routes.UPDATE_NOTE -> {
+                    Button(
+                        onClick = { /*TODO*/ }, modifier = Modifier
+                            .padding(end = 24.dp)
+                    ) {
+                        Text(text = "Update")
+                    }
                 }
             }
         }

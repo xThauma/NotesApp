@@ -14,18 +14,24 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,6 +50,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -63,7 +70,6 @@ fun UpdateNote(
     noteId: Int? = null,
 ) {
     val noteState by noteViewModel.noteState.collectAsState()
-    val focusRequester = remember { FocusRequester() }
 
     var title by remember { mutableStateOf(TextFieldValue("")) }
     var content by remember { mutableStateOf("") }
@@ -103,75 +109,34 @@ fun UpdateNote(
         )
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        defaultDominantColor,
-                        dominantColor
-                    )
-                )
-            )
+    UpdateNoteContainerElement(
+        defaultDominantColor = defaultDominantColor,
+        dominantColor = dominantColor
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            TextField(
-                modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
-                value = title,
-                onValueChange = { title = it; showError = false },
-                label = { Text("Title") },
-                isError = showError && title.text.isBlank(),
+            UpdateTitleElement(
+                title = title.text,
+                onValueChange = { text -> title = TextFieldValue(text); showError = false },
+                showError = showError
             )
-            if (showError && title.text.isBlank()) {
-                Text(
-                    text = "Title cannot be empty",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
-            TextField(
-                modifier = Modifier.fillMaxWidth(),
-                value = content,
+            UpdateContentElement(
+                content = content,
                 onValueChange = { content = it; showError = false },
-                label = { Text("Content") },
-                isError = showError && content.isBlank()
+                showError = showError
             )
-            if (showError && content.isBlank()) {
-                Text(
-                    text = "Content cannot be empty",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                itemsIndexed(ColorResource.colorList) { index, color ->
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .border(
-                                if (selectedColorIndex == index) 3.dp else 1.dp,
-                                Color.Black,
-                                CircleShape
-                            )
-                            .clip(CircleShape)
-                            .background(color)
-                            .clickable {
-                                selectedColorIndex = index
-                                dominantColor = ColorResource.colorList[selectedColorIndex]
-                            }
-                    )
+            UpdateColorIndicatorElement(
+                selectedColorIndex = selectedColorIndex,
+                onColorSelected = { index ->
+                    selectedColorIndex = index
+                    dominantColor = ColorResource.colorList[index]
                 }
-            }
+            )
 
             Spacer(modifier = Modifier.height(10.dp))
 
@@ -285,7 +250,154 @@ fun UpdateNote(
             }
         }
     }
+}
+
+@Composable
+fun UpdateNoteContainerElement(
+    defaultDominantColor: Color,
+    dominantColor: Color,
+    content: @Composable () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        defaultDominantColor,
+                        dominantColor
+                    )
+                )
+            )
+    ) {
+        content()
+    }
+}
+
+@Composable
+fun UpdateColorIndicatorElement(
+    selectedColorIndex: Int,
+    onColorSelected: (Int) -> Unit
+) {
+    LazyVerticalGrid(
+        modifier = Modifier.fillMaxWidth(),
+        columns = GridCells.Adaptive(minSize = 36.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+
+    ) {
+        itemsIndexed(ColorResource.colorList) { index, color ->
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .border(
+                        if (selectedColorIndex == index) 3.dp else 1.dp,
+                        Color.Black,
+                        CircleShape
+                    )
+                    .clip(CircleShape)
+                    .background(color)
+                    .clickable {
+                        onColorSelected(index)
+                    }
+            )
+        }
+    }
+}
+
+@Composable
+fun UpdateTitleElement(
+    title: String,
+    onValueChange: (String) -> Unit,
+    showError: Boolean
+) {
+    val focusRequester = remember { FocusRequester() }
+
+    TextField(
+        modifier = Modifier
+            .fillMaxWidth()
+            .focusRequester(focusRequester),
+        value = title,
+        onValueChange = { onValueChange(title) },
+        label = { Text("Title") },
+        isError = showError && title.isBlank(),
+        shape = RoundedCornerShape(24.dp),
+        colors = TextFieldDefaults.colors(
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent
+        )
+    )
+    if (showError && title.isBlank()) {
+        Text(
+            text = "Title cannot be empty",
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodySmall
+        )
+    }
+
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
+    }
+}
+
+@Composable
+fun UpdateContentElement(
+    content: String,
+    onValueChange: (String) -> Unit,
+    showError: Boolean
+) {
+    TextField(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState()),
+        value = content,
+        onValueChange = { onValueChange(it) },
+        label = { Text("Content") },
+        isError = showError && content.isBlank(),
+        shape = RoundedCornerShape(24.dp),
+        maxLines = 5,
+        colors = TextFieldDefaults.colors(
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent
+        )
+    )
+    if (showError && content.isBlank()) {
+        Text(
+            text = "Content cannot be empty",
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodySmall
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun UpdateTitleElementPreview() {
+    val titleState = remember { mutableStateOf("Sample Title") }
+    val contentState = remember { mutableStateOf("Sample Content") }
+    val showErrorState = remember { mutableStateOf(false) }
+    val selectedColorIndex = 1
+
+    UpdateNoteContainerElement(
+        defaultDominantColor = MaterialTheme.colorScheme.surface,
+        dominantColor = ColorResource.colorList[selectedColorIndex]
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            UpdateTitleElement(
+                title = titleState.value,
+                onValueChange = { titleState.value = it },
+                showError = showErrorState.value
+            )
+            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+            UpdateContentElement(
+                content = contentState.value,
+                onValueChange = { contentState.value = it },
+                showError = showErrorState.value
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+            UpdateColorIndicatorElement(selectedColorIndex, {})
+        }
     }
 }
