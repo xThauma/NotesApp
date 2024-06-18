@@ -109,7 +109,6 @@ class NoteViewModel @Inject constructor(
             is NoteUiEvent.Delete -> deleteNote(note = event.note)
             is NoteUiEvent.Insert -> insertNote(note = event.note)
             is NoteUiEvent.Update -> updateNote(note = event.note)
-            is NoteUiEvent.UpdateNotification -> updateNotification(note = event.note)
             is NoteUiEvent.GetById -> getNoteById(noteId = event.noteId)
             is NoteUiEvent.FilterEvent.TextChange -> setSearchQuery(searchQuery = event.searchQuery)
             is NoteUiEvent.SortEvent.Ascending -> setSortOrder(sortOrder = SortOrder.ASCENDING)
@@ -127,10 +126,5 @@ class NoteViewModel @Inject constructor(
 
     private fun deleteNote(note: Note) = viewModelScope.launch {
         noteRepository.deleteNote(note)
-    }
-
-    private fun updateNotification(note: Note) = viewModelScope.launch {
-        updateNote(note = note.copy(shouldNotify = !note.shouldNotify))
-        _toastMessage.emit("Notification ${if (!note.shouldNotify) "enabled" else "disabled"} for ${note.title}")
     }
 }
