@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlinAndroidKsp)
     alias(libs.plugins.hiltAndroid)
     alias(libs.plugins.kapt)
+    alias(libs.plugins.google.gms.google.services)
 }
 
 android {
@@ -62,6 +63,9 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
 
+    // coil
+    implementation(libs.coil)
+
     // material3
     implementation(libs.material3)
 
@@ -75,6 +79,9 @@ dependencies {
     // room
     implementation(libs.room.ktx)
     implementation(libs.room.runtime)
+    implementation(libs.firebase.auth)
+    implementation(libs.play.services.auth)
+    implementation(libs.firebase.firestore)
     ksp(libs.room.compiler)
 
     // hilt

@@ -1,12 +1,19 @@
 package com.notes.presentation.ui
 
+import android.app.Activity.RESULT_OK
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Assignment
@@ -14,7 +21,6 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -24,8 +30,8 @@ import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.ComposeCompilerApi
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,19 +39,25 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.intl.Locale
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
 import com.notes.data.event.NoteUiEvent
+import com.notes.data.event.auth.AuthUiEvent
 import com.notes.presentation.navigation.Routes
+import com.notes.presentation.ui.auth.SignInState
+import com.notes.presentation.viewmodel.auth.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,11 +66,26 @@ fun AppTopBar(
         navController: NavHostController,
         onEvent: (NoteUiEvent) -> Unit,
         navigateToAddNote: () -> Unit,
+        authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     var searchVisible by rememberSaveable { mutableStateOf(false) }
     var searchText by rememberSaveable { mutableStateOf("") }
+    val signInState by authViewModel.signInState.collectAsState()
+    val toastMessage by authViewModel.toastMessage.collectAsState(initial = "")
+    val context = LocalContext.current
+
+    LaunchedEffect(key1 = toastMessage) {
+        if (toastMessage.isNotBlank()) {
+            Toast.makeText(
+                    context,
+                    toastMessage,
+                    Toast.LENGTH_LONG
+            )
+                .show()
+        }
+    }
 
     TopAppBar(title = {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -82,7 +109,9 @@ fun AppTopBar(
                     Routes.NOTES -> {
                         NotesRouteTopBar(searchVisible = searchVisible,
                                 searchText = searchText,
+                                authState = signInState,
                                 onEvent = onEvent,
+                                onAuthEvent = { authViewModel.onEvent(it) },
                                 navigateToAddNote = navigateToAddNote,
                                 onSearchTextChanged = {
                                     searchText = it
@@ -103,12 +132,22 @@ fun AppTopBar(
 fun NotesRouteTopBar(
         searchVisible: Boolean,
         searchText: String,
+        authState: SignInState,
         onEvent: (NoteUiEvent) -> Unit,
+        onAuthEvent: (AuthUiEvent) -> Unit,
         navigateToAddNote: () -> Unit,
         onSearchTextChanged: (String) -> Unit,
         onSearchClosed: () -> Unit,
         onSearchClicked: () -> Unit
 ) {
+    val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.StartIntentSenderForResult(),
+            onResult = { result ->
+                if (result.resultCode == RESULT_OK) {
+                    val intent = result.data ?: return@rememberLauncherForActivityResult
+                    onAuthEvent(AuthUiEvent.SignInResultEvent(intent = intent))
+                }
+            })
+
     if (searchVisible) {
         NoteSearchBar(searchText = searchText,
                 onSearchTextChanged = {
@@ -121,9 +160,21 @@ fun NotesRouteTopBar(
         NoteSearchIcon(onSearchClick = { onSearchClicked() })
         NoteAddIcon { navigateToAddNote.invoke() }
         NoteSortIcon { onEvent(it) }
-        NoteAuthIcon {
-
-        }
+        NoteAuthIcon(authState = authState,
+                onSignInEvent = {
+                    onAuthEvent(AuthUiEvent.SignInClickEvent {
+                        if (it == null) {
+                            return@SignInClickEvent
+                        }
+                        launcher.launch(
+                                IntentSenderRequest.Builder(it)
+                                    .build()
+                        )
+                    })
+                },
+                onSignOutEvent = {
+                    onAuthEvent(AuthUiEvent.SignOutEvent)
+                })
     }
 }
 
@@ -183,15 +234,35 @@ fun NoteSearchBar(
 
 @Composable
 fun NoteAuthIcon(
-        onAuthClick: () -> Unit,
+        authState: SignInState,
+        onSignInEvent: () -> Unit,
+        onSignOutEvent: () -> Unit,
 ) {
-    Icon(imageVector = Icons.Filled.AccountCircle,
-            contentDescription = "Auth Icon",
+    Box(
             modifier = Modifier
                 .padding(12.dp)
-                .clickable {
-                    onAuthClick()
-                })
+                .size(24.dp)
+    ) {
+        if (authState.isSignInSuccessful && authState.userData?.profilePictureUrl?.isBlank() == false) {
+            AsyncImage(
+                    model = authState.userData.profilePictureUrl,
+                    contentDescription = "Image Description",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
+                        .clickable {
+                            onSignOutEvent()
+                        },
+                    contentScale = ContentScale.Fit,
+            )
+        } else {
+            Icon(imageVector = Icons.Filled.AccountCircle,
+                    contentDescription = "Auth Icon",
+                    modifier = Modifier.clickable {
+                        onSignInEvent()
+                    })
+        }
+    }
 }
 
 @Composable
@@ -244,23 +315,5 @@ fun NoteSortIcon(
                     onUiSortEvent(NoteUiEvent.SortEvent.Descending)
                     expanded = false
                 })
-    }
-}
-
-@Preview(
-        showBackground = true,
-        showSystemUi = true
-)
-@Composable
-fun AppTopBarPreview() {
-    Row {
-
-
-        NotesRouteTopBar(searchVisible = false,
-                searchText = "",
-                onEvent = {},
-                navigateToAddNote = { /*TODO*/ },
-                onSearchTextChanged = {},
-                onSearchClosed = { /*TODO*/ }) {}
     }
 }
