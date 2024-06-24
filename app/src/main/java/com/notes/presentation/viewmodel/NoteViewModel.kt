@@ -4,9 +4,9 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.notes.data.event.NoteUiEvent
-import com.notes.data.repository.NoteCloudFirestoreRepositoryImpl
-import com.notes.domain.usecase.FilterAndSortNotesUseCase
-import com.notes.domain.repository.NoteRepository
+import com.notes.data.repository.NoteFirestoreRepositoryImpl
+import com.notes.domain.usecase.database.FilterAndSortNotesUseCase
+import com.notes.domain.repository.NoteRoomRepository
 import com.notes.domain.model.Note
 import com.notes.domain.model.SortOrder
 import com.notes.presentation.ui.NoteState
@@ -26,9 +26,9 @@ import javax.inject.Inject
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class NoteViewModel @Inject constructor(
-        private val noteRepository: NoteRepository,
-        private val noteCloudFirestoreRepositoryImpl: NoteCloudFirestoreRepositoryImpl,
-        private val filterAndSortNotesUseCase: FilterAndSortNotesUseCase,
+    private val noteRoomRepository: NoteRoomRepository,
+    private val noteFirestoreRepositoryImpl: NoteFirestoreRepositoryImpl,
+    private val filterAndSortNotesUseCase: FilterAndSortNotesUseCase,
 ) : ViewModel() {
 
     private val _toastMessage = MutableSharedFlow<String?>()
@@ -54,7 +54,7 @@ class NoteViewModel @Inject constructor(
                         searchQuery
                 )
             }.flatMapLatest { (sortOrder, searchQuery) ->
-                noteRepository.getAllNotes()
+                noteRoomRepository.getAllNotes()
                     .map { notes ->
                         filterAndSortNotesUseCase.execute(
                                 notes,
@@ -81,7 +81,7 @@ class NoteViewModel @Inject constructor(
                         isLoading = true
                 )
             }
-            noteRepository.getNoteById(noteId)
+            noteRoomRepository.getNoteById(noteId)
                 .catch {
                     Log.e(
                             "NoteViewModel",
@@ -135,17 +135,17 @@ class NoteViewModel @Inject constructor(
     }
 
     private fun insertNote(note: Note) = viewModelScope.launch {
-        noteCloudFirestoreRepositoryImpl.insertNote(note)
-        noteRepository.insertNote(note)
+        noteFirestoreRepositoryImpl.insertNote(note)
+        noteRoomRepository.insertNote(note)
     }
 
     private fun updateNote(note: Note) = viewModelScope.launch {
-        noteCloudFirestoreRepositoryImpl.updateNote(note)
-        noteRepository.updateNote(note)
+        noteFirestoreRepositoryImpl.updateNote(note)
+        noteRoomRepository.updateNote(note)
     }
 
     private fun deleteNote(note: Note) = viewModelScope.launch {
-        noteCloudFirestoreRepositoryImpl.deleteNote(note)
-        noteRepository.deleteNote(note)
+        noteFirestoreRepositoryImpl.deleteNote(note)
+        noteRoomRepository.deleteNote(note)
     }
 }

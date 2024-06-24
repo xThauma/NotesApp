@@ -7,12 +7,16 @@ import androidx.lifecycle.viewModelScope
 import com.notes.data.event.auth.AuthUiEvent
 import com.notes.domain.model.auth.UserData
 import com.notes.domain.repository.AuthRepository
+import com.notes.domain.usecase.database.AddNoteRoomUseCase
+import com.notes.domain.usecase.database.GetAllNotesRoomUseCase
+import com.notes.domain.usecase.firestore.GetAllNotesFirestoreUseCase
 import com.notes.presentation.ui.auth.SignInState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -23,7 +27,10 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-        private val authRepository: AuthRepository,
+    private val authRepository: AuthRepository,
+    private val getAllNotesRoomUseCase: GetAllNotesRoomUseCase,
+    private val addNoteRoomUseCase: AddNoteRoomUseCase,
+    private val getAllNotesFirestoreUseCase: GetAllNotesFirestoreUseCase
 ) : ViewModel() {
 
     private val _signInState = MutableStateFlow(SignInState())
@@ -46,26 +53,56 @@ class AuthViewModel @Inject constructor(
 
     fun onEvent(event: AuthUiEvent) {
         return when (event) {
-            is AuthUiEvent.SignInResultEvent -> onSignInResult(intent = event.intent)
-            is AuthUiEvent.SignOutEvent -> onSignOutResult()
+            is AuthUiEvent.SignInResultEvent -> onSignInResult(
+                intent = event.intent,
+                navigation = event.navigation
+            )
+
+            is AuthUiEvent.SignOutEvent -> onSignOutResult(navigation = event.navigation)
             is AuthUiEvent.SignInClickEvent -> onSignInClick(onLaunch = event.onLaunch)
+            is AuthUiEvent.SyncData -> onSyncData()
+        }
+    }
+
+    private fun onSyncData() {
+        viewModelScope.launch {
+            _signInState.update {
+                it.copy(isLoading = true)
+            }
+            val existingNotes = getAllNotesRoomUseCase.execute().first()
+            val notesToAdd = getAllNotesFirestoreUseCase.execute().first()
+
+            val filteredNotes = notesToAdd.filter { noteToAdd ->
+                existingNotes.none { existingNote ->
+                    existingNote.title == noteToAdd.title && existingNote.content == noteToAdd.content
+                }
+            }
+
+            filteredNotes.forEach { note ->
+                addNoteRoomUseCase.execute(note)
+            }
+            _signInState.update {
+                it.copy(isLoading = false)
+            }
+            _toastMessage.emit("Data has been synced")
         }
     }
 
     private fun getUser(): UserData? = authRepository.getSignedInUser()
 
-    private fun onSignInResult(intent: Intent) {
+    private fun onSignInResult(intent: Intent, navigation: () -> Unit) {
         viewModelScope.launch {
             val result = authRepository.getSignInResult(
-                    intent = intent
+                intent = intent
             )
             _signInState.update {
                 it.copy(
-                        userData = result.userData,
-                        signInError = result.errorMessage
+                    userData = result.userData,
+                    signInError = result.errorMessage
                 )
             }
             if (result.userData != null) {
+                navigation()
                 _toastMessage.emit("Successfully signed in to ${result.userData.username}")
             } else {
                 _toastMessage.emit("Signed out")
@@ -73,11 +110,12 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    private fun onSignOutResult() {
+    private fun onSignOutResult(navigation: () -> Unit) {
         viewModelScope.launch {
             _signInState.update {
                 SignInState()
             }
+            navigation()
             _toastMessage.emit("Signed out")
         }
     }

@@ -10,7 +10,8 @@ import android.content.IntentSender
 sealed interface AuthUiEvent {
 
 
-    data class SignInResultEvent(val intent: Intent): AuthUiEvent
-    data class SignInClickEvent(val onLaunch: (IntentSender?) -> Unit): AuthUiEvent
-    data object SignOutEvent: AuthUiEvent
+    data class SignInResultEvent(val intent: Intent, val navigation: () -> Unit) : AuthUiEvent
+    data class SignInClickEvent(val onLaunch: (IntentSender?) -> Unit) : AuthUiEvent
+    data class SignOutEvent(val navigation: () -> Unit) : AuthUiEvent
+    data object SyncData : AuthUiEvent
 }

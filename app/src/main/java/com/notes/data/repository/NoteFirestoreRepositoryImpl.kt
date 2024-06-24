@@ -14,10 +14,10 @@ import javax.inject.Inject
 /**
  * Created by Kamil Lenartowicz on 06/20/2024 @ QVC, Inc
  */
-class NoteCloudFirestoreRepositoryImpl @Inject constructor() : NoteCloudFirestoreRepository {
+class NoteFirestoreRepositoryImpl @Inject constructor() : NoteCloudFirestoreRepository {
 
     private val db = Firebase.firestore
-    private val TAG = NoteCloudFirestoreRepositoryImpl::class.java.name
+    private val TAG = NoteFirestoreRepositoryImpl::class.java.name
 
     override fun getAllNotes(): Flow<List<Note>> {
         return callbackFlow {
@@ -26,22 +26,31 @@ class NoteCloudFirestoreRepositoryImpl @Inject constructor() : NoteCloudFirestor
                 .addOnSuccessListener { querySnapshot ->
                     val notes = mutableListOf<Note>()
                     for (document in querySnapshot.documents) {
-                        val note = document.toObject(Note::class.java)
-                        note?.let { notes.add(it) }
+                        val title = document.getString("title") ?: ""
+                        val content = document.getString("content") ?: ""
+                        val selectedColorIndex =
+                            document.getLong("selectedColorIndex")?.toInt() ?: 0
+                        val documentId = document.id
+                        Note(
+                            title = title,
+                            content = content,
+                            selectedColorIndex = selectedColorIndex,
+                            documentId = documentId
+                        ).let { notes.add(it) }
                     }
                     trySend(notes)
                     close()
                     Log.i(
-                            TAG,
-                            "Successfully fetched ${notes.size} notes from cloud firestore"
+                        TAG,
+                        "Successfully fetched ${notes.size} notes from cloud firestore"
                     )
                 }
                 .addOnFailureListener {
                     close(it)
                     Log.e(
-                            TAG,
-                            "Failure when trying to get nots from cloud firestore",
-                            it
+                        TAG,
+                        "Failure when trying to get nots from cloud firestore",
+                        it
                     )
                 }
             awaitClose()
@@ -54,15 +63,15 @@ class NoteCloudFirestoreRepositoryImpl @Inject constructor() : NoteCloudFirestor
             .set(note)
             .addOnSuccessListener {
                 Log.i(
-                        TAG,
-                        "Successfully added new $note to cloud firestore"
+                    TAG,
+                    "Successfully added new $note to cloud firestore"
                 )
             }
             .addOnFailureListener {
                 Log.e(
-                        TAG,
-                        "Failure when trying to add new $note to cloud firestore",
-                        it
+                    TAG,
+                    "Failure when trying to add new $note to cloud firestore",
+                    it
                 )
             }
     }

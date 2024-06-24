@@ -4,10 +4,10 @@ import android.content.Context
 import androidx.room.Room
 import com.notes.data.database.NoteDao
 import com.notes.data.database.NoteDatabase
-import com.notes.data.repository.NoteCloudFirestoreRepositoryImpl
-import com.notes.data.repository.NoteRepositoryImpl
+import com.notes.data.repository.NoteFirestoreRepositoryImpl
+import com.notes.data.repository.NoteRoomRepositoryImpl
 import com.notes.domain.repository.NoteCloudFirestoreRepository
-import com.notes.domain.repository.NoteRepository
+import com.notes.domain.repository.NoteRoomRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -36,13 +36,13 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideNoteRepository(noteDao: NoteDao): NoteRepository {
-        return NoteRepositoryImpl(noteDao)
+    fun provideNoteRepository(noteDao: NoteDao): NoteRoomRepository {
+        return NoteRoomRepositoryImpl(noteDao)
     }
 
     @Provides
     @Singleton
     fun provideCloudFirestoreRepository() : NoteCloudFirestoreRepository {
-        return NoteCloudFirestoreRepositoryImpl()
+        return NoteFirestoreRepositoryImpl()
     }
 }
