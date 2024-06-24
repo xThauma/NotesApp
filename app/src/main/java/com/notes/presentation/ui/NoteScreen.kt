@@ -52,7 +52,6 @@ fun NotesScreen(
                 NotesList(
                     paddingBottom = paddingValues.calculateBottomPadding(),
                     noteList = noteState.allNotes,
-                    onEvent = { event -> noteViewModel.onEvent(event) },
                     navigateToEditNote = navigateToEditNote
                 )
             }
@@ -76,7 +75,6 @@ fun NotesLoading() {
 fun NotesList(
     paddingBottom: Dp,
     noteList: List<Note>,
-    onEvent: (NoteUiEvent) -> Unit,
     navigateToEditNote: (Int) -> Unit
 ) {
     LazyVerticalStaggeredGrid(
@@ -89,7 +87,6 @@ fun NotesList(
                     .animateItem(tween(1000, 0, FastOutSlowInEasing))
                     .heightIn(max = 340.dp),
                 note = note,
-                onEvent = onEvent,
                 navigateToEditNote = navigateToEditNote
             )
         }
