@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -16,12 +15,15 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.notes.presentation.navigation.Routes
+import com.notes.presentation.ui.profile.ProfileScreen
+import com.notes.presentation.ui.topbar.AppTopBar
 import com.notes.presentation.viewmodel.NoteViewModel
 import com.notes.presentation.viewmodel.auth.AuthViewModel
 
 @Composable
 fun NoteAppNavigation(
-        noteViewModel: NoteViewModel = hiltViewModel()
+    noteViewModel: NoteViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel(),
 ) {
     val navController = rememberNavController()
 
@@ -32,53 +34,68 @@ fun NoteAppNavigation(
             Routes.NOTES -> "Notes"
             Routes.UPDATE_NOTE -> "Edit Note"
             Routes.ADD_NOTE -> "Add Note"
+            Routes.PROFILE -> "Profile"
             else -> "Notes App"
         }
         AppTopBar(
-                title = title,
-                navController = navController,
-                onEvent = { event -> noteViewModel.onEvent(event) },
-                navigateToAddNote = {
-                    navController.navigate("addNote/null")
-                },
+            title = title,
+            navController = navController,
+            onEvent = { event -> noteViewModel.onEvent(event) },
+            navigateToAddNote = {
+                navController.navigate("addNote/null")
+            },
+            navigateToProfile = {
+                navController.navigate("profile")
+            },
+            authViewModel = authViewModel
         )
     }) { paddingValues ->
         NavHost(
-                navController = navController,
-                startDestination = Routes.NOTES,
-                modifier = Modifier.padding(
-                        start = paddingValues.calculateStartPadding(LayoutDirection.Ltr),
-                        top = paddingValues.calculateTopPadding(),
-                        end = paddingValues.calculateEndPadding(LayoutDirection.Ltr)
-                )
+            navController = navController,
+            startDestination = Routes.NOTES,
+            modifier = Modifier.padding(
+                start = paddingValues.calculateStartPadding(LayoutDirection.Ltr),
+                top = paddingValues.calculateTopPadding(),
+                end = paddingValues.calculateEndPadding(LayoutDirection.Ltr)
+            )
         ) {
             composable(Routes.NOTES) {
                 NotesScreen(
-                        navigateToEditNote = { noteId ->
-                            navController.navigate("updateNote/$noteId")
-                        },
-                        noteViewModel = noteViewModel
+                    navigateToEditNote = { noteId ->
+                        navController.navigate("updateNote/$noteId")
+                    },
+                    noteViewModel = noteViewModel
                 )
             }
             composable(
-                    route = Routes.UPDATE_NOTE,
-                    arguments = listOf(navArgument("noteId") { type = NavType.StringType })
+                route = Routes.UPDATE_NOTE,
+                arguments = listOf(navArgument("noteId") { type = NavType.StringType })
             ) { backStackEntry ->
                 val noteId = backStackEntry.arguments?.getString("noteId")
                 val noteIdInt = noteId?.toIntOrNull()
                 UpdateNote(
-                        navController = navController,
-                        onEvent = { event -> noteViewModel.onEvent(event) },
-                        noteId = noteIdInt
+                    navController = navController,
+                    onEvent = { event -> noteViewModel.onEvent(event) },
+                    noteId = noteIdInt
                 )
             }
             composable(
-                    route = Routes.ADD_NOTE
+                route = Routes.ADD_NOTE
             ) { _ ->
                 UpdateNote(
-                        navController = navController,
-                        onEvent = { event -> noteViewModel.onEvent(event) },
-                        noteId = null
+                    navController = navController,
+                    onEvent = { event -> noteViewModel.onEvent(event) },
+                    noteId = null
+                )
+            }
+            composable(
+                route = Routes.PROFILE
+            ) { _ ->
+                ProfileScreen(
+                    navigateToNoteList = {
+                        navController.popBackStack()
+                    },
+                    authViewModel = authViewModel
                 )
             }
         }

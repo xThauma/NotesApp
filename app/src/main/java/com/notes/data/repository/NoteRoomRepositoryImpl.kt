@@ -1,12 +1,12 @@
 package com.notes.data.repository
 
 import com.notes.data.database.NoteDao
-import com.notes.domain.repository.NoteRepository
+import com.notes.domain.repository.NoteRoomRepository
 import com.notes.domain.model.Note
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
-class NoteRepositoryImpl @Inject constructor(private val noteDao: NoteDao) : NoteRepository {
+class NoteRoomRepositoryImpl @Inject constructor(private val noteDao: NoteDao) : NoteRoomRepository {
 
     override fun getAllNotes(): Flow<List<Note>> = noteDao.getAllNotes()
 
